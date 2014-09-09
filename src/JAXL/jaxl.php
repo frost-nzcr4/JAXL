@@ -228,7 +228,7 @@ class JAXL extends XMPPStream
             $this->require_xep('0206');
             $transport = $this->xeps['0206'];
         } else {
-            $transport = new JAXLSocketClient($this->cfg['stream_context']);
+            $transport = new JAXLSocketClient($this->cfg['stream_context'], $this);
         }
 
         // lifecycle events callback
@@ -256,6 +256,14 @@ class JAXL extends XMPPStream
         }
         
         parent::__destruct();
+    }
+
+    /**
+     * @return JAXLEvent
+     */
+    public function get_event()
+    {
+        return $this->ev;
     }
 
     public function get_pid_file_path()
@@ -339,6 +347,21 @@ class JAXL extends XMPPStream
             $subject
         );
         $this->send($msg);
+    }
+
+    public function send_chat_msg_and_die($to, $body, $thread = null, $subject = null)
+    {
+        $msg = new XMPPMsg(
+            array(
+                'type' => 'chat',
+                'to' => $to,
+                'from' => $this->full_jid->to_string()
+            ),
+            $body,
+            $thread,
+            $subject
+        );
+        $this->send_and_die($msg, array($this->ev, array($msg)));
     }
     
     public function get_vcard($jid = null, $cb = null)

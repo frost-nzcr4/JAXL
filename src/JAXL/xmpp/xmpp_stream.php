@@ -146,6 +146,14 @@ abstract class XMPPStream extends JAXLFsm
     }
 
     /**
+     * @param JAXLXml|XMPPStanza $stanza
+     */
+    public function send_and_die($stanza)
+    {
+        $this->trans->send_and_die($stanza->to_string());
+    }
+
+    /**
      * @param string $data
      */
     public function send_raw($data)

@@ -44,6 +44,7 @@
  */
 class JAXLSocketClient implements JAXLClientBase
 {
+    public $jaxl = null;
 
     private $host = null;
     private $port = null;
@@ -73,9 +74,10 @@ class JAXLSocketClient implements JAXLClientBase
     /**
      * @param resource $stream_context  Resource created with stream_context_create().
      */
-    public function __construct($stream_context = null)
+    public function __construct($stream_context = null, XMPPStream &$jaxl = null)
     {
         $this->stream_context = $stream_context;
+        $this->jaxl = $jaxl; /** @var JAXL $jaxl */
     }
 
     public function __destruct()
@@ -169,6 +171,8 @@ class JAXLSocketClient implements JAXLClientBase
 
     public function crypt()
     {
+        //stream_set_timeout($this->fd, 5);
+
         // set blocking (since tls negotiation fails if stream is non-blocking)
         stream_set_blocking($this->fd, true);
 
@@ -201,6 +205,20 @@ class JAXLSocketClient implements JAXLClientBase
         }
         JAXLLoop::watch($this->fd, array(
             'write' => array(&$this, 'on_write_ready')
+        ));
+        $this->writing = true;
+    }
+
+    public function send_and_die($data)
+    {
+        $this->obuffer .= $data;
+
+        // add watch for write events
+        if ($this->writing) {
+            return;
+        }
+        JAXLLoop::watch($this->fd, array(
+           'write' => array(&$this, 'on_write_ready_and_die')
         ));
         $this->writing = true;
     }
@@ -256,6 +274,30 @@ class JAXLSocketClient implements JAXLClientBase
                 'write' => true
             ));
             $this->writing = false;
+        }
+
+        //JAXLLogger::debug("current obuffer size: ".strlen($this->obuffer)."");
+    }
+
+    public function on_write_ready_and_die($fd)
+    {
+        //JAXLLogger::debug("on write ready called");
+        $total = strlen($this->obuffer);
+        $bytes = @fwrite($fd, $this->obuffer);
+        $this->send_bytes += $bytes;
+
+        JAXLLogger::debug("sent ".$bytes."/".$this->send_bytes." of data");
+        JAXLLogger::debug(substr($this->obuffer, 0, $bytes));
+
+        $this->obuffer = substr($this->obuffer, $bytes, $total-$bytes);
+
+        // unwatch for write if obuffer is empty
+        if (strlen($this->obuffer) === 0) {
+            JAXLLoop::unwatch($fd, array(
+               'write' => true
+            ));
+            $this->writing = false;
+            $this->jaxl->get_event()->emit('on_chat_msg_sent', array('DIE! DIE! DIE! DIE! DIE! DIE! DIE! DIE!'));
         }
 
         //JAXLLogger::debug("current obuffer size: ".strlen($this->obuffer)."");
