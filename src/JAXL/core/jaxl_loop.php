@@ -44,6 +44,8 @@
  */
 class JAXLLoop
 {
+    /** @var bool */
+    public static $hardStop = false;
 
     /**
      * @var JAXLClock
@@ -68,6 +70,14 @@ class JAXLLoop
 
     private function __clone()
     {
+    }
+
+    /**
+     * If something goes wrong only hard stop can break the loop.
+     */
+    public static function hardStop()
+    {
+        self::$hardStop = true;
     }
 
     public static function watch($fd, $opts)
@@ -119,6 +129,9 @@ class JAXLLoop
             self::$clock = new JAXLClock();
 
             while ((self::$active_read_fds + self::$active_write_fds) > 0) {
+                if (self::$hardStop) {
+                    break;  // Stop the loop.
+                }
                 self::select();
             }
 
