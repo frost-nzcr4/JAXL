@@ -190,8 +190,11 @@ class JAXLXml extends JAXLXmlAccess
      * @param string $text
      * @return JAXLXml
      */
-    public function c($name, $ns = null, array $attrs = array(), $text = null)
+    public function c($name, $ns = null, array $attrs = null, $text = null)
     {
+        if (is_null($attrs)) {
+            $attrs = array();
+        }
         $node = new JAXLXml($name, $ns, $attrs, $text);
         $node->parent = &$this->rover;
         $this->rover->children[] = &$node;
@@ -282,29 +285,33 @@ class JAXLXml extends JAXLXmlAccess
     {
         $xml = '';
 
-        $xml .= '<'.$this->name;
-        if ($this->ns && $this->ns != $parent_ns) {
-            $xml .= ' xmlns="'.$this->ns.'"';
-        }
-        foreach ($this->attrs as $k => $v) {
-            if (!is_null($v) && $v !== false) {
-                $xml .= ' '.$k.'="'.htmlspecialchars($v).'"';
+        if ($this->name) {
+            $xml .= '<'.$this->name;
+            if ($this->ns && $this->ns != $parent_ns) {
+                $xml .= ' xmlns="'.$this->ns.'"';
             }
-        }
-        $xml .= '>';
+            foreach ($this->attrs as $k => $v) {
+                if (!is_null($v) && $v !== false) {
+                    $xml .= ' '.$k.'="'.htmlspecialchars($v).'"';
+                }
+            }
+            $xml .= '>';
 
         foreach ($this->children as $child) {
-            $xml .= $child->to_string($this->ns);
-        }
+                $xml .= $child->to_string($this->ns);
+            }
 
-        if ($this->xml !== null) {
-            $xml .= $this->xml;
-        }
+            if ($this->xml !== null) {
+                $xml .= $this->xml;
+            }
 
-        if ($this->text !== null) {
+            if ($this->text !== null) {
+                $xml .= htmlspecialchars($this->text);
+            }
+            $xml .= '</'.$this->name.'>';
+        } else {
             $xml .= htmlspecialchars($this->text);
         }
-        $xml .= '</'.$this->name.'>';
         return $xml;
     }
 }
