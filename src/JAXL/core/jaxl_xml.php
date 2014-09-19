@@ -295,20 +295,24 @@ class JAXLXml extends JAXLXmlAccess
                     $xml .= ' '.$k.'="'.htmlspecialchars($v).'"';
                 }
             }
-            $xml .= '>';
 
-        foreach ($this->children as $child) {
-                $xml .= $child->to_string($this->ns);
-            }
+            if ($this->children || $this->text) {
+                $xml .= '>';
+                foreach ($this->children as $child) {
+                    $xml .= $child->to_string($this->ns);
+                }
 
-            if ($this->xml !== null) {
-                $xml .= $this->xml;
-            }
+                if ($this->xml !== null) {
+                    $xml .= $this->xml;
+                }
 
-            if ($this->text !== null) {
-                $xml .= htmlspecialchars($this->text);
+                if ($this->text !== null) {
+                    $xml .= htmlspecialchars($this->text);
+                }
+                $xml .= '</'.$this->name.'>';
+            } else {
+                $xml .= '/>';
             }
-            $xml .= '</'.$this->name.'>';
         } else {
             $xml .= htmlspecialchars($this->text);
         }
